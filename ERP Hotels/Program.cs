@@ -14,27 +14,21 @@ namespace ERP_Hotels
             Console.WriteLine($" Count rooms: {Hotel.Rooms.Count}");
             Console.WriteLine($" Count guests: {Hotel.Guests.Count}");
 
-            Console.WriteLine($" {"Id",4} {"Name",10} {"Surname",13} {"Patronymic",15} "      +
-                              $"{"Date birth",12} " +
-                              $"{"City",10} {"Street",10} {"House",5} {"Apartment",5}");
-            foreach (var hotelGuest in Hotel.Guests.Values)
+            while(true)
             {
-                hotelGuest.WriteYourSelf();
+                Console.WriteLine($" {"Id",4} {"Name",10} {"Surname",13} {"Patronymic",15} " +
+                                  $"{"Date birth",12} "                                      +
+                                  $"{"City",10} {"Street",10} {"House",5} {"Apartment",5}");
+                foreach (var hotelGuest in Hotel.Guests.Values)
+                {
+                    hotelGuest.WriteYourSelf();
+                }
+
+                Console.WriteLine($"\n {"Id",4} {"Category",10} {"Sleeping place",15} {"Coast",10}");
+                SelectAction();
+                FileEditor.Close();
+                Console.Clear();
             }
-
-            Console.WriteLine($"\n {"Id",4} {"Category",10} {"Sleeping place",15} {"Coast",10}");
-            //var idRoom = Hotel.AddRoom(RoomCategory.Economy);
-            //var idGuest = Hotel.AddGuest("Anton", "Sidorovich", "Andreevich", DateTime.Today, "Krivoy Rog",
-            //    "Sobornosti", 23, 15);
-
-            //var booking = Hotel.Booking(idGuest, idRoom, new(2022, 4, 20), new(2022, 4, 30));
-
-            //Hotel.CheckIn(idGuest, idRoom, new(2021, 4, 21));
-            //booking.ChangeEndDate(new DateTime(2021, 5, 3));
-            //Hotel.CheckOut(idGuest, idRoom, new DateTime(2021, 4, 24));
-            SelectAction();
-            Console.ReadKey();
-            FileEditor.Close();
         }
 
         private static void SelectAction()
