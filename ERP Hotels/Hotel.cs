@@ -7,189 +7,187 @@ namespace ERP_Hotels
     internal class Hotel
     {
         private int _roomsId = 0;
-        private readonly Dictionary<int, Room> _rooms;
+        internal Dictionary<int, Room> Rooms { get; }
+        private int _guestId = 0;
+        internal Dictionary<int, Guest> Guests { get; }
 
-        private int _guestsId = 0;
-        private readonly Dictionary<int, Guest> _guests;
-
-        private readonly Dictionary<DateTime, List<Booking>> _calendarBooking;
-        private readonly Dictionary<Booking, List<string>> _journal; 
+        internal Dictionary<DateTime, Dictionary<int, Booking>> CalendarBooking { get; }
 
         internal Hotel()
         {
-            _rooms = new ();
-            _guests = new ();
-            _journal = new();
-            _calendarBooking = new ();
+            Guests = new();
+            Rooms = new();
+            CalendarBooking = new();
         }
 
-        internal int AddRoom(Category category)
+        internal Hotel(IEnumerable<Guest> guests, IEnumerable<Room> rooms,
+            Dictionary<DateTime, Dictionary<int, Booking>>  calendarBooking) : this()
         {
-            if (_rooms.TryAdd(_roomsId, new Room(category)))
-                return _roomsId++;
+            if (guests is { })
+                foreach (var guest in guests)
+                    AddGuest(guest);
 
+            if (rooms is { })
+                foreach (var room in rooms)
+                    AddRoom(room);
+
+            if (calendarBooking is { }) CalendarBooking = calendarBooking;
+        }
+
+        internal int AddRoom(RoomCategory roomCategory)
+        {
+            var room = new Room(_roomsId, roomCategory);
+            return AddRoom(room);
+        }
+
+        private int AddRoom(Room room)
+        {
+            if (Rooms.TryAdd(_roomsId, room)) return _roomsId++;
             return -1;
         }
 
-        internal bool RemoveRoom(int idRoom)
-            => _rooms.Remove(idRoom);
+        internal bool RemoveRoom(int id)
+            => Rooms.Remove(id);
 
         internal int AddGuest(string name, string surname, string patronymic, DateTime dateOfBirth, string city,
             string street, int house, int apartment)
         {
-            if (_guests.TryAdd(_guestsId, new Guest(name, surname, patronymic, dateOfBirth, city, street, house,
-                apartment)))
-                return _guestsId++;
+            var guest = new Guest(_guestId, name, surname, patronymic, dateOfBirth, city, street, house, apartment);
+            return AddGuest(guest);
+        }
 
+        private int AddGuest(Guest guest)
+        {
+            if (Guests.TryAdd(_guestId, guest)) return _guestId++;
             return -1;
         }
 
-        internal bool RemoveGuest(int idGuest)
-            => _guests.Remove(idGuest);
+        internal bool RemoveGuest(int id)
+            => Guests.Remove(id);
 
-        internal delegate void DoBooking(List<Booking> list, Booking booking);
+
         internal Booking Booking(int idGuests, int idRoom, DateTime from, DateTime to)
         {
-            if (!_rooms.TryGetValue(idRoom, out var room)) return null;
-            if (!_guests.TryGetValue(idGuests, out var guest)) return null;
+            if (!TryGetGuestAndRoom(idGuests, idRoom, out var guest, out var room)) return default;
+            if (!CorrectDate(from, to)) return default;
+
             var booking = new Booking(guest, room, from, to);
-
-
-            for (var now = booking.From; now < booking.To; now += TimeSpan.FromDays(1))
-                if (_calendarBooking.TryGetValue(now, out var bookings))
-                    if (bookings.Any(b => b.Room == booking.Room))
-                        return null;
-
-            BookingDo(booking, booking.From, booking.To, AddBooking);
-            return booking;
+            return AddBookingToCalendar(booking, from, to) ? booking : default;
         }
-        internal void AddBooking(List<Booking> list, Booking booking)
-        {
-            list.Add(booking);
-        }
-        internal bool CancelBooking(int idGuests, int idRoom, DateTime from, DateTime to)
-        {
-            if(!_rooms.TryGetValue(idRoom, out var room)) return false;
-            if(!_guests.TryGetValue(idGuests, out var guest)) return false;
-            if(!_calendarBooking.TryGetValue(from, out var bookings)) return false;
 
-            var booking = bookings.FirstOrDefault(b => b.Guest == guest && b.Room == room && b.From <= from && b.To >= to);
-            if (booking == null)
+        internal bool AddBookingToCalendar(Booking booking, DateTime from, DateTime to)
+        {
+            if (booking == default     ||
+                !CorrectDate(from, to) ||
+                booking.From > from    ||
+                booking.To   < to) return false;
+
+            var bookings = SelectDate(from, to, true);
+
+            if (bookings.Any(b => b.ContainsKey(booking.Room.Id)))
                 return false;
 
-            BookingDo(booking, from, to, RemoveBooking);
+            foreach (var b in bookings)
+                b.Add(booking.Room.Id, booking);
             return true;
         }
-        internal void RemoveBooking(List<Booking> list, Booking booking)
-        {
-            list.Remove(booking);
-        }
 
-        internal bool BookingDo(Booking booking, DateTime from, DateTime to, DoBooking addOrRemove)
+        internal bool CancelBooking(int idGuests, int idRoom, DateTime from, DateTime to)
         {
-            for (var now = from; now <= to; now += TimeSpan.FromDays(1))
-            {
-                if (!_calendarBooking.ContainsKey(now))
-                    _calendarBooking.Add(now, new List<Booking>(1));
+            if (!CorrectDate(from)                                      ||
+                !TryGetBooking(idGuests, idRoom, from, out var booking) ||
+                booking.From != from                                    ||
+                booking.To   != to) return false;
 
-                addOrRemove(_calendarBooking[now], booking);
-            }
+            RemoveBookingFromCalendar(booking, from, to);
 
             return true;
         }
 
-        internal int CountFreeRoom(DateTime from, DateTime to)
+        internal void RemoveBookingFromCalendar(Booking booking, DateTime from, DateTime to)
         {
-            var count = _rooms.Count;
+            if (booking == default || !CorrectDate(from, to)) return;
 
-            while (from <= to)
+            foreach (var bookings in SelectDate(from, to, false))
+                bookings.Remove(booking.Room.Id);
+        }
+
+
+        internal Dictionary<int, Room> FreeRooms(DateTime from, DateTime to)
+        {
+            if (!CorrectDate(from, to)) return default;
+
+            var rooms = new Dictionary<int, Room>(Rooms);
+
+            foreach (var booking 
+                in SelectDate(from, to, false).
+                    SelectMany(bookings => bookings).GroupBy(r => r.Key))
+
+                rooms.Remove(booking.Key);
+
+            return rooms;
+        }
+
+
+        internal void CheckIn(int idGuests, int idRoom, DateTime date)
+        {
+            if (!TryGetBooking(idGuests, idRoom, date, out var booking))
+                if (!Guests.ContainsKey(idGuests) ||
+                    !Rooms.ContainsKey(idRoom) ||
+                    !CorrectDate(date))
+                    return;
+                else
+                    booking = Booking(idGuests, idRoom, date, date.AddDays(1));
+
+            if (booking == default) return;
+            booking.CheckIn = date;                                     
+        }
+
+        internal void CheckOut(int idGuests, int idRoom, DateTime date)
+        {
+            if (!TryGetBooking(idGuests, idRoom, date, out var booking))
+                return;
+
+            booking.CheckOut = date;
+        }
+        private static bool CorrectDate(DateTime from, DateTime to) =>
+            CorrectDate(from) && from <= to;
+
+        private static bool CorrectDate(DateTime date) => date >= DateTime.Now;
+
+
+        private List<Dictionary<int, Booking>> SelectDate(DateTime from, DateTime to, bool willNeedAdd)
+        {
+            var selected = new List<Dictionary<int, Booking>>(to.Subtract(from).Days);
+
+            for (var now = from; now <= to; now = now.AddDays(1))
             {
-                if (_calendarBooking.ContainsKey(from))
-                    if (_calendarBooking[from].Count < count)
-                        count = _calendarBooking[from].Count;
+                if (!CalendarBooking.ContainsKey(now))
+                    if (!willNeedAdd)
+                        continue;
+                    else
+                        CalendarBooking.Add(now, new(1));
 
-                from += TimeSpan.FromDays(1);
+                selected.Add(CalendarBooking[now]);
             }
 
-            return count;
+            return selected;
+        }
+        private bool TryGetBooking(int idGuests, int idRoom, DateTime date, out Booking booking)
+        {
+            booking = default;
+            return Guests.TryGetValue(idGuests, out var guest)
+                   && Rooms.TryGetValue(idRoom, out var room)
+                   && CalendarBooking.TryGetValue(date, out var bookings)
+                   && bookings.TryGetValue(room.Id, out booking)
+                   && booking.Guest == guest;
         }
 
-        internal void CheckIn(int idGuest, int idRoom, DateTime from)
+        private bool TryGetGuestAndRoom(int idGuests, int idRoom, out Guest guest, out Room room)
         {
-            Booking nowBooking = null; 
-            if (_calendarBooking.ContainsKey(from))
-                nowBooking = _calendarBooking[@from]
-                    .FirstOrDefault(b => b.Guest == _guests[idGuest] && b.Room == _rooms[idRoom]);
-
-
-            nowBooking ??= new Booking(_guests[idGuest], _rooms[idRoom], @from, @from += TimeSpan.FromDays(1));
-
-            if (!_journal.ContainsKey(nowBooking))
-                _journal.Add(nowBooking, new List<string>());
-
-            if (_journal[nowBooking].Contains("CheckIn"))
-                return;
-
-            if (nowBooking.From != from)
-                nowBooking.ChangeStartDate(from);
-
-            _journal[nowBooking].Add("CheckIn");
-        }
-
-        internal void CheckOut(int idGuest, int idRoom, DateTime date)
-        {
-            Booking nowBooking = null;
-            if (_calendarBooking.ContainsKey(date))
-                nowBooking = _calendarBooking[date]
-                    .FirstOrDefault(b => b.Guest == _guests[idGuest] && b.Room == _rooms[idRoom]);
-
-            if (nowBooking == null)
-                return;
-
-            if (!_journal.ContainsKey(nowBooking))
-                return;
-
-            if (_journal[nowBooking].Contains("CheckOut"))
-                return;
-
-            if (nowBooking.To != date)
-                nowBooking.ChangeEndDate(date);
-
-            _journal[nowBooking].Add("CheckOut");
-        }
-    }
-
-    internal class Booking
-    {
-        internal DateTime From { get; private set; }
-        internal DateTime To { get; private set; }
-        internal Room Room { get; }
-        internal Guest Guest { get; }
-
-        internal Booking(Guest guest, Room room, DateTime from, DateTime to)
-        {
-            Guest = guest;
-            Room = room;
-            From = from;
-            To = to;
-        }
-
-        internal void ChangeStartDate(DateTime newDate)
-        {
-            if (From > newDate)
-                Program.Hotel.BookingDo(this, newDate, From.AddDays(-1), Program.Hotel.AddBooking);
-            else
-                Program.Hotel.BookingDo(this, From, newDate.AddDays(-1), Program.Hotel.RemoveBooking);
-            From = newDate;
-
-        }
-        internal void ChangeEndDate(DateTime newDate)
-        {
-            if (To < newDate)
-                Program.Hotel.BookingDo(this, To.AddDays(1), newDate, Program.Hotel.AddBooking);
-            else
-                Program.Hotel.BookingDo(this, newDate.AddDays(1), To, Program.Hotel.RemoveBooking);
-            To = newDate;
+            room = default;
+            return Guests.TryGetValue(idGuests, out guest) &&
+                   Rooms.TryGetValue(idRoom, out room);
         }
     }
 }

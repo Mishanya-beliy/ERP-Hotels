@@ -1,29 +1,41 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 namespace ERP_Hotels
 {
     internal class Guest
     {
-        internal FullName FullName { get; }
-        internal DateTime DateOfBirth { get; }
-        internal Address Address { get; }
+        [JsonInclude]
+        public int Id { get; }
+        [JsonInclude]
+        public FullName FullName { get; }
+        [JsonInclude]
+        public DateTime DateOfBirth { get; }
+        [JsonInclude]
+        public Address Address { get; }
 
-        internal Guest(string name, string surname, string patronymic, DateTime dateOfBirth, string city, string street, int house,
-            int apartment)
+        [JsonConstructor]
+        public Guest(int id, FullName fullName, DateTime dateOfBirth, Address address)
         {
-            FullName = new FullName(name, surname, patronymic);
+            Id = id;
+            FullName = fullName;
             DateOfBirth = dateOfBirth;
-            Address = new Address(city, street, house, apartment);
+            Address = address;
+        }
+
+        internal Guest(int id, string name, string surname, string patronymic, DateTime dateOfBirth, string city, string street, int house,
+            int apartment) : this(id, new(name, surname, patronymic), dateOfBirth, new(city, street, house, apartment))
+        {
         }
     }
 
     internal class FullName
     {
-        internal string Name { get; }
-        internal string Surname { get; }
-        internal string Patronymic { get; }
+        public string Name { get; }
+        public string Surname { get; }
+        public string Patronymic { get; }
 
-        internal FullName(string name, string surname, string patronymic)
+        public FullName(string name, string surname, string patronymic)
         {
             Name = name;
             Surname = surname;
@@ -33,17 +45,17 @@ namespace ERP_Hotels
 
     internal class Address
     {
-        internal string City { get; }
-        internal string Street { get; }
-        internal int House { get; }
-        internal int Apartment { get; }
+        public string City { get; }
+        public string Street { get; }
+        public int House { get; }
+        public int Apartment { get; }
 
-        internal Address(string city, string street, int house, int apartment)
+        public Address(string city, string street, int house, int apartment)
         {
-            this.City = city;
-            this.Street = street;
-            this.House = house;
-            this.Apartment = apartment;
+            City = city;
+            Street = street;
+            House = house;
+            Apartment = apartment;
         }
     }
 }

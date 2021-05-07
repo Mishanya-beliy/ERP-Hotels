@@ -1,33 +1,38 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 namespace ERP_Hotels
 {
-    internal class Room
+    public class Room
     {
-        private float _coast;
-        private Category _category;
-        private byte _sleepingPlaces;
+        [JsonInclude]
+        public int Id { get; }
+        internal float Coast { get; }
+        [JsonInclude]
+        public RoomCategory Category { get; }
+        internal byte SleepingPlaces { get; }
 
-        public Room(Category category)
+        public Room(int id, RoomCategory category)
         {
-            _category = category;
-            switch (_category)
+            Id = id;
+            Category = category;
+            switch (Category)
             {
-                case Category.Economy:
-                    _coast = 50;
-                    _sleepingPlaces = 4;
+                case RoomCategory.Economy:
+                    Coast = 50;
+                    SleepingPlaces = 4;
                     break;
-                case Category.Standart:
-                    _coast = 100;
-                    _sleepingPlaces = 3;
+                case RoomCategory.Basic:
+                    Coast = 100;
+                    SleepingPlaces = 3;
                     break;
-                case Category.Suite:
-                    _coast = 200;
-                    _sleepingPlaces = 2;
+                case RoomCategory.Suite:
+                    Coast = 200;
+                    SleepingPlaces = 2;
                     break;
-                case Category.PresidentSuite:
-                    _coast = 300;
-                    _sleepingPlaces = 2;
+                case RoomCategory.PresidentSuite:
+                    Coast = 300;
+                    SleepingPlaces = 2;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -35,10 +40,10 @@ namespace ERP_Hotels
         }
     }
 
-    internal enum Category
+    public enum RoomCategory
     {
         Economy,
-        Standart,
+        Basic,
         Suite,
         PresidentSuite
     }
