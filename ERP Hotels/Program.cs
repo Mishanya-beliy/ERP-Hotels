@@ -20,11 +20,12 @@ namespace ERP_Hotels
                                   $"{"Date birth",12} "                                      +
                                   $"{"City",10} {"Street",10} {"House",5} {"Apartment",5}");
                 foreach (var hotelGuest in Hotel.Guests.Values)
-                {
                     hotelGuest.WriteYourSelf();
-                }
 
                 Console.WriteLine($"\n {"Id",4} {"Category",10} {"Sleeping place",15} {"Coast",10}");
+                foreach (var hotelRoom in Hotel.Rooms.Values)
+                    hotelRoom.WriteYouSelf();
+
                 SelectAction();
                 FileEditor.Close();
                 Console.Clear();
