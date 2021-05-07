@@ -20,16 +20,16 @@ namespace ERP_Hotels
             CalendarBooking = new();
         }
 
-        internal Hotel(IEnumerable<Guest> guests, IEnumerable<Room> rooms,
-            Dictionary<DateTime, Dictionary<int, Booking>>  calendarBooking) : this()
+        internal Hotel(Dictionary<int, Guest> guests, Dictionary<int, Room> rooms,
+            Dictionary<DateTime, Dictionary<int, Booking>> calendarBooking) : this()
         {
             if (guests is { })
-                foreach (var guest in guests)
-                    AddGuest(guest);
+                Guests = guests;
+            _guestId = Guests.Keys.Max() + 1;
 
             if (rooms is { })
-                foreach (var room in rooms)
-                    AddRoom(room);
+                Rooms = rooms;
+            _roomsId = Rooms.Keys.Max() + 1;
 
             if (calendarBooking is { }) CalendarBooking = calendarBooking;
         }
@@ -68,8 +68,8 @@ namespace ERP_Hotels
 
         internal Booking Booking(int idGuests, int idRoom, DateTime from, DateTime to)
         {
-            if (!TryGetGuestAndRoom(idGuests, idRoom, out var guest, out var room)) return default;
-            if (!CorrectDate(from, to)) return default;
+            if (!TryGetGuestAndRoom(idGuests, idRoom, out var guest, out var room) || 
+                !CorrectDate(from, to)) return default;
 
             var booking = new Booking(guest, room, from, to);
             return AddBookingToCalendar(booking, from, to) ? booking : default;
@@ -153,7 +153,7 @@ namespace ERP_Hotels
         private static bool CorrectDate(DateTime from, DateTime to) =>
             CorrectDate(from) && from <= to;
 
-        private static bool CorrectDate(DateTime date) => date >= DateTime.Now;
+        private static bool CorrectDate(DateTime date) => date >= DateTime.Now.Date;
 
 
         private List<Dictionary<int, Booking>> SelectDate(DateTime from, DateTime to, bool willNeedAdd)
@@ -173,7 +173,7 @@ namespace ERP_Hotels
 
             return selected;
         }
-        private bool TryGetBooking(int idGuests, int idRoom, DateTime date, out Booking booking)
+        internal bool TryGetBooking(int idGuests, int idRoom, DateTime date, out Booking booking)
         {
             booking = default;
             return Guests.TryGetValue(idGuests, out var guest)

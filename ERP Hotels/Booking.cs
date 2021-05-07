@@ -20,7 +20,7 @@ namespace ERP_Hotels
         public DateTime From
         {
             get => _from;
-            private set
+            set
             {
                 if (CheckIn != DateTime.MinValue) return;
 
@@ -39,7 +39,7 @@ namespace ERP_Hotels
         public DateTime To
         {
             get => _to;
-            private set
+            set
             {
                 if (CheckOut != DateTime.MinValue) return;
 

@@ -14,32 +14,9 @@ namespace ERP_Hotels
 
         internal static void Open()
         {
-            List<Guest> guest = default;
-            List<Room> room = default;
-            Dictionary<DateTime, Dictionary<int, Booking>> calendar = default;
-
-            try
-            {
-                guest = ReadFromFile<List<Guest>>("Guests").Result;
-            }
-            finally
-            {
-                try
-                {
-                    room = ReadFromFile<List<Room>>("Rooms").Result;
-                }
-                finally
-                {
-                    try
-                    {
-                        calendar = ReadFromFile<Dictionary<DateTime, Dictionary<int, Booking>>>("Bookings").Result;
-                    }
-                    finally
-                    {
-                        Program.Hotel = new( guest, room, calendar);
-                    }
-                }
-            }
+            Program.Hotel = new(ReadFromFile<Dictionary <int, Guest>>("Guests").Result,
+                ReadFromFile<Dictionary<int, Room>>("Rooms").Result,
+                ReadFromFile<Dictionary<DateTime, Dictionary<int, Booking>>>("Bookings").Result);
         }
 
         private static async Task<T> ReadFromFile<T>(string name)
@@ -47,7 +24,16 @@ namespace ERP_Hotels
             if (!File.Exists(name + ".json")) return default;
 
             await using var stream = File.OpenRead(name + ".json");
-            return await DeserializeAsync<T>(stream, Options);
+            T b = default;
+            try
+            {
+                b = await DeserializeAsync<T>(stream, Options);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Exception in " + name);
+            }
+            return b;
         }
         internal static void Close()
         {

@@ -27,6 +27,13 @@ namespace ERP_Hotels
             int apartment) : this(id, new(name, surname, patronymic), dateOfBirth, new(city, street, house, apartment))
         {
         }
+
+        internal void WriteYourSelf()
+        {
+            Console.WriteLine($" {Id, 4} {FullName.Name,10} {FullName.Surname,13} {FullName.Patronymic,15} "         +
+                              $"{DateOfBirth.Date.Day.ToString()+"." + DateOfBirth.Date.Month.ToString()+"." + DateOfBirth.Date.Year.ToString(),12} "+
+                              $"{Address.City,10} {Address.Street,10} {Address.House,5} {Address.Apartment,5}");
+        }
     }
 
     internal class FullName

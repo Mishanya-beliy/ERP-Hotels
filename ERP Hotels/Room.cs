@@ -38,6 +38,11 @@ namespace ERP_Hotels
                     throw new ArgumentOutOfRangeException();
             }
         }
+
+        internal void WriteYouSelf()
+        {
+            Console.WriteLine($" {Id,4} {Category, 10} {SleepingPlaces, 15} {Coast, 10}");
+        }
     }
 
     public enum RoomCategory
