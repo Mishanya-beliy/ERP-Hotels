@@ -24,12 +24,16 @@ namespace ERP_Hotels
             Dictionary<DateTime, Dictionary<int, Booking>> calendarBooking) : this()
         {
             if (guests is { })
+            {
                 Guests = guests;
-            _guestId = Guests.Keys.Max() + 1;
+                _guestId = Guests.Keys.Max() + 1;
+            }
 
             if (rooms is { })
+            {
                 Rooms = rooms;
-            _roomsId = Rooms.Keys.Max() + 1;
+                _roomsId = Rooms.Keys.Max() + 1;
+            }
 
             if (calendarBooking is { }) CalendarBooking = calendarBooking;
         }
