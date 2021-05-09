@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace ERP_Hotels
 {
-    public class Room
+    public class Room : IDisplayed
     {
         [JsonInclude]
         public int Id { get; }
@@ -39,9 +39,9 @@ namespace ERP_Hotels
             }
         }
 
-        internal void WriteYouSelf()
+        void IDisplayed.WriteYourSelf()
         {
-            Console.WriteLine($" {Id,4} {Category, 10} {SleepingPlaces, 15} {Coast, 10}");
+            Console.WriteLine($" {Id,4} {Category, 15} {SleepingPlaces, 15} {Coast, 10}");
         }
     }
 

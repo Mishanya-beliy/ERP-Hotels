@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using static System.Text.Json.JsonSerializer;
 
@@ -35,17 +36,17 @@ namespace ERP_Hotels
             }
             return b;
         }
-        internal static void Close()
+        internal static void Write(CancellationToken token)
         {
-            WriteToFile("Guests", Program.Hotel.Guests);
-            WriteToFile("Rooms", Program.Hotel.Rooms);
-            WriteToFile("Bookings", Program.Hotel.CalendarBooking);
+            WriteToFile("Guests", Program.Hotel.Guests, token);
+            WriteToFile("Rooms", Program.Hotel.Rooms, token);
+            WriteToFile("Bookings", Program.Hotel.CalendarBooking, token);
         }
         
-        private static async void WriteToFile<T>(string name, T list)
+        private static async void WriteToFile<T>(string name, T list, CancellationToken token)
         {
             await using var stream = File.OpenWrite(name + ".json");
-            await SerializeAsync(stream, list, Options);
+            await SerializeAsync(stream, list, Options, token);
         }
     }
 

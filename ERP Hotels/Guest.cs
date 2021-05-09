@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace ERP_Hotels
 {
-    internal class Guest
+    internal class Guest : IDisplayed
     {
         [JsonInclude]
         public int Id { get; }
@@ -28,7 +28,7 @@ namespace ERP_Hotels
         {
         }
 
-        internal void WriteYourSelf()
+        void IDisplayed.WriteYourSelf()
         {
             Console.WriteLine($" {Id, 4} {FullName.Name,10} {FullName.Surname,13} {FullName.Patronymic,15} "         +
                               $"{DateOfBirth.Date.Day.ToString()+"." + DateOfBirth.Date.Month.ToString()+"." + DateOfBirth.Date.Year.ToString(),12} "+

@@ -133,26 +133,28 @@ namespace ERP_Hotels
         }
 
 
-        internal void CheckIn(int idGuests, int idRoom, DateTime date)
+        internal bool CheckIn(int idGuests, int idRoom, DateTime date)
         {
             if (!TryGetBooking(idGuests, idRoom, date, out var booking))
                 if (!Guests.ContainsKey(idGuests) ||
                     !Rooms.ContainsKey(idRoom) ||
                     !CorrectDate(date))
-                    return;
+                    return false;
                 else
                     booking = Booking(idGuests, idRoom, date, date.AddDays(1));
 
-            if (booking == default) return;
-            booking.CheckIn = date;                                     
+            if (booking == default) return false;
+            booking.CheckIn = date;
+            return booking.CheckIn == date;
         }
 
-        internal void CheckOut(int idGuests, int idRoom, DateTime date)
+        internal bool CheckOut(int idGuests, int idRoom, DateTime date)
         {
             if (!TryGetBooking(idGuests, idRoom, date, out var booking))
-                return;
+                return false;
 
             booking.CheckOut = date;
+            return booking.CheckOut == date;
         }
         private static bool CorrectDate(DateTime from, DateTime to) =>
             CorrectDate(from) && from <= to;

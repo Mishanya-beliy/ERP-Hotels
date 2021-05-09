@@ -1,81 +1,101 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace ERP_Hotels
 {
     internal class Program
     {
+        private static readonly CancellationTokenSource Source = new();
+        private static readonly CancellationToken Token = Source.Token;
+
+        private static readonly string Rooms = $" Rooms\n {"Id",4} {"Category",15} {"Sleeping place",15} {"Coast",10}";
+        private static readonly string Guest = $" Guests\n {"Id",4} {"Name",10} {"Surname",13} {"Patronymic",15} " +
+                                                     $"{"Date birth",12} "                                      +
+                                                     $"{"City",10} {"Street",10} {"House",5} {"Apartment",5}";
+
         internal static Hotel Hotel;
+
         private static void Main()
         {
             FileEditor.Open();
 
-            Console.WriteLine($" Count rooms: {Hotel.Rooms.Count}");
-            Console.WriteLine($" Count guests: {Hotel.Guests.Count}");
-
-            while(true)
+            string response = default;
+            while (true)
             {
-                Console.WriteLine($" {"Id",4} {"Name",10} {"Surname",13} {"Patronymic",15} " +
-                                  $"{"Date birth",12} "                                      +
-                                  $"{"City",10} {"Street",10} {"House",5} {"Apartment",5}");
-                foreach (var hotelGuest in Hotel.Guests.Values)
-                    hotelGuest.WriteYourSelf();
+                DisplayOf(Guest, Hotel.Guests.Values);
+                DisplayOf(Rooms, Hotel.Rooms.Values);
 
-                Console.WriteLine($"\n {"Id",4} {"Category",10} {"Sleeping place",15} {"Coast",10}");
-                foreach (var hotelRoom in Hotel.Rooms.Values)
-                    hotelRoom.WriteYouSelf();
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine(" " + response);
+                Console.ResetColor();
 
-                SelectAction();
-                FileEditor.Close();
-                Console.Clear();
+                try
+                {
+                    response = SelectAction();
+                    FileEditor.Write(Token);
+                    Console.Clear();
+                }
+                catch
+                {
+                    Source.Dispose();
+                    break;
+                }
             }
         }
 
-        private static void SelectAction()
+        private static void DisplayOf<T>(string ho, Dictionary<int, T>.ValueCollection hotelItems) where T: IDisplayed
+        {
+            Console.WriteLine(ho);
+            foreach (var hotelItem in hotelItems)
+                hotelItem.WriteYourSelf();
+            Console.WriteLine($" Count: {hotelItems.Count}\n");
+        }
+
+        private static string SelectAction()
         {
             switch (GetResponse(1,3, $" Choose action\n 1:Edit guest 2:Edit room 3:Edit booking"))
             {
                 case 1:
-                    EditGuest();
-                    break;
+                    return EditGuest();
                 case 2:
-                    EditRoom();
-                    break;
+                    return EditRoom();
                 case 3:
-                    EditBooking();
-                    break;
+                    return EditBooking();
             }
+
+            return default;
         }
 
         private static int _yorId = -1;
-        private static void EditGuest()
+
+        private static string EditGuest()
         {
-            switch (GetResponse(1,3, $" 1:Registration guest 2:Remove guest 3:Authorization(select)"))
+            switch (GetResponse(1, 3, $" 1:Registration guest 2:Remove guest 3:Authorization(select)"))
             {
                 case 1:
                     string name = GetResponse(" Name: ");
                     string surname = GetResponse(" Surname:");
                     string patronymic = GetResponse(" Patronymic:");
-                    
+
                     var birth = GetDate(" Date of birth");
 
-                    string city  = GetResponse(" City:");
+                    string city = GetResponse(" City:");
                     string street = GetResponse(" Street:");
                     int house = GetResponse(0, 3000, " House:");
                     int apartment = GetResponse(0, 3000, " Apartment:");
 
                     _yorId = Hotel.AddGuest(name, surname, patronymic, birth, city, street, house, apartment);
-                    Console.WriteLine($" Now your id is: {_yorId}");
-                    
-                    break;
+                    return $" Now your id is: {_yorId}";
                 case 2:
                     int id = GetResponse(0, Int32.MaxValue, "Select id guest:");
-                    Console.WriteLine($" Status operation is: {Hotel.RemoveGuest(id)}");
-                    break;
+                    return $" Status operation is: {Hotel.RemoveGuest(id)}";
                 case 3:
                     break;
             }
+
+            return default;
         }
 
         private static  void Authorization()
@@ -89,46 +109,47 @@ namespace ERP_Hotels
             else
                 Console.WriteLine(" This guest not exist");
         }
-        private static void EditRoom()
+        private static string EditRoom()
         {
             switch (GetResponse(1, 2, $" 1:Add room 2:Remove room"))
             {
                 case 1:
                     int categ = GetResponse(1, 4, " 1: Economy 2: Basic 3: Suite 4: PresidentSuite") - 1;
-                    Console.WriteLine($"Room id is: {Hotel.AddRoom((RoomCategory)categ)}");
-                    break;
+                    return $"Room id is: {Hotel.AddRoom((RoomCategory)categ)}";
                 case 2:
                     int id = GetResponse(0, Int32.MaxValue, "Select id room:");
-                    Console.WriteLine($"Status operation is: {Hotel.RemoveRoom(id)}");
-                    break;
+                    return  $"Status operation is: {Hotel.RemoveRoom(id)}";
             }
+
+            return default;
         }
 
-        private static void EditBooking()
+        private static string EditBooking()
         {
+            string response = default;
             switch (GetResponse(1, 6,
                 $" 1:Check free room 2:Booking 3: Remove 4: Extend / shorten 5: Check in 6: Check out"))
             {
                 case 1:
                     Console.WriteLine(" Select range");
                     foreach (var freeRoom in Hotel.FreeRooms(GetDate(" From:"), GetDate(" To:")).Keys)
-                        Console.Write(" " + freeRoom);
-                    Console.WriteLine(": id free rooms");
-                    break;
+                        response += " " + freeRoom;
+                    return "Free rooms id:" + response;
                 case 2:
                     CheckAuth();
-                    Console.WriteLine(Hotel.Booking(_yorId, GetResponse(0, int.MaxValue, " Select room by id:"),
-                                          GetDate(" From:"),
-                                          GetDate(" To:")) ==
-                                      default
+                    return Hotel.Booking(_yorId, GetResponse(0, int.MaxValue, " Select room by id:"),
+                               GetDate(" From:"),
+                               GetDate(" To:")) ==
+                           default
                         ? " Something went wrong"
-                        : " Congratulations, your room is booked for you");
-                    break;
+                        : " Congratulations, your room is booked for you";
                 case 3:
                     CheckAuth();
-                    Console.WriteLine(Hotel.CancelBooking(_yorId, GetResponse(0, int.MaxValue, " Select room by id:"), GetDate(" From:"),
-                        GetDate(" To:")) == false ? " Something went wrong" : " Successfully canceled reservation");
-                    break;
+                    return Hotel.CancelBooking(_yorId, GetResponse(0, int.MaxValue, " Select room by id:"),
+                               GetDate(" From:"),
+                               GetDate(" To:"))
+                        ? " Successfully canceled reservation"
+                        : " Something went wrong";
                 case 4:
                     CheckAuth();
                     Hotel.TryGetBooking(_yorId, GetResponse(0, int.MaxValue, " Select room by id:"),
@@ -138,18 +159,23 @@ namespace ERP_Hotels
                         Console.WriteLine(" Successfully found");
                         booking.From = GetDate(" Write new date from:");
                         booking.To = GetDate(" new date to:");
+                        return " Successfully change range";
                     }
-                    else Console.WriteLine(  " Booking not found");
-                    break;
+                    else return " Booking not found";
                 case 5:
                     CheckAuth();
-                    Hotel.CheckIn(_yorId, GetResponse(0, int.MaxValue, " Select room by id:"), DateTime.Now);
-                    break;
+                    return Hotel.CheckIn(_yorId,
+                        GetResponse(0, int.MaxValue, " Select room by id:"), DateTime.Now)
+                        ? " Successfully check in"
+                        : " Something went wrong";
                 case 6:
                     CheckAuth();
-                    Hotel.CheckOut(_yorId, GetResponse(0, int.MaxValue, " Select room by id:"), DateTime.Now);
-                    break;
+                    return Hotel.CheckOut(_yorId, 
+                        GetResponse(0, int.MaxValue, " Select room by id:"), DateTime.Now)
+                        ? " Successfully check in"
+                        : " Something went wrong";
             }
+            return default;
         }
 
         private static void CheckAuth()
@@ -190,10 +216,18 @@ namespace ERP_Hotels
             Console.WriteLine(request);
             while (!int.TryParse(s = Console.ReadLine(), out result) || result < min || result > max)
                 if (s == Stop)
+                {
+                    Source.Cancel();
                     throw new NotImplementedException();
+                }
                 else
                     Console.WriteLine($"Write correct number {min} - {max}!");
             return result;
         }
+    }
+
+    internal interface IDisplayed
+    {
+        internal void WriteYourSelf();
     }
 }
