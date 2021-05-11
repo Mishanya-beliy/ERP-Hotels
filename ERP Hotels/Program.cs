@@ -24,12 +24,13 @@ namespace ERP_Hotels
             string response = default;
             while (true)
             {
+                ColoredWrite(_yorId == -1
+                    ? " You unauthorized"
+                    : $" Your id: {_yorId}", ConsoleColor.DarkYellow);
                 DisplayOf(Guest, Hotel.Guests.Values);
                 DisplayOf(Rooms, Hotel.Rooms.Values);
 
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine(" " + response);
-                Console.ResetColor();
+                ColoredWrite($" {response}", ConsoleColor.DarkRed);
 
                 try
                 {
@@ -43,6 +44,13 @@ namespace ERP_Hotels
                     break;
                 }
             }
+        }
+
+        private static void ColoredWrite(string text, ConsoleColor color)
+        {
+            Console.ForegroundColor = color;
+            Console.WriteLine(text);
+            Console.ResetColor();
         }
 
         private static void DisplayOf<T>(string ho, Dictionary<int, T>.ValueCollection hotelItems) where T: IDisplayed
@@ -92,22 +100,25 @@ namespace ERP_Hotels
                     int id = GetResponse(0, Int32.MaxValue, "Select id guest:");
                     return $" Status operation is: {Hotel.RemoveGuest(id)}";
                 case 3:
-                    break;
+                    return Authorization()
+                        ? $" Now your id is: {_yorId}"
+                        : " This guest not exist";
             }
 
             return default;
         }
 
-        private static  void Authorization()
+        private static  bool Authorization()
         {
-            int id = GetResponse(0, Int32.MaxValue, " Select id guest for authorization:");
+            int id = GetResponse(0, Hotel.Guests.Keys.Max(), " Select id guest for authorization:");
             if (Hotel.Guests.ContainsKey(id))
             {
                 _yorId = id;
                 Console.WriteLine($" Now your id is: {_yorId}");
+                return true;
             }
             else
-                Console.WriteLine(" This guest not exist");
+                return false;
         }
         private static string EditRoom()
         {
@@ -183,7 +194,9 @@ namespace ERP_Hotels
             while (_yorId == -1)
             {
                 Console.WriteLine(" Before this action need authorization");
-                Authorization();
+                Console.WriteLine(Authorization() 
+                    ? $" Now your id is: {_yorId}"
+                    : " This guest not exist");
             }
         }
         private static DateTime GetDate(string request)
@@ -200,20 +213,15 @@ namespace ERP_Hotels
             Console.WriteLine(request);
             return Console.ReadLine();
         }
-        static List<int> GetParametrs(string[] requests)
-        {
-            List<int> response = new(requests.Length);
-            response.AddRange(requests.Select(request => GetResponse(int.MinValue, int.MaxValue, request)));
-            return response;
-        }
 
         private const string Stop = "Stop";
-        static  int GetResponse(int min, int max, string request)
+
+        private static  int GetResponse(int min, int max, string request)
         {
             int result;
             string s;
 
-            Console.WriteLine(request);
+            Console.WriteLine(request + " for exit write 'Stop'");
             while (!int.TryParse(s = Console.ReadLine(), out result) || result < min || result > max)
                 if (s == Stop)
                 {

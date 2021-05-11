@@ -45,7 +45,7 @@ namespace ERP_Hotels
         
         private static async void WriteToFile<T>(string name, T list, CancellationToken token)
         {
-            await using var stream = File.OpenWrite(name + ".json");
+            await using var stream = File.Create(name + ".json");
             await SerializeAsync(stream, list, Options, token);
         }
     }
